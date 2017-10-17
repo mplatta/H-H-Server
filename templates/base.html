@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HandH API server</title>
+</head>
+<style>
+ 	html { border: 30px solid {% if valid %}green{% else %}red{% endif %};
+		    position: absolute;
+		    top: 0;
+		    right: 0;
+		    bottom:0;
+		    left: 0;
+		    overflow: auto;
+	}
+	body {
+		padding-left: 10px;
+		padding-right: 10px:
+		padding-top: 10px;
+	}
+</style>
+<body>
+	{% with messages = get_flashed_messages() %}
+  		{% if messages %}
+	    	{% for message in messages %}
+		     		<p style="color:{% if valid %}green{% else %}red{% endif %}; font-weight: bold;width: 100%;text-align: center;">{{ message }}</p>
+		    {% endfor %}
+		{% endif %}
+	{% endwith %}
+	{% if valid %}
+		<h1>Server Works Properly</h1>
+		<p>Witamy na stronie testowej serwera dla aplikacji Hare&amp;Hounds &reg;.</p>
+		<a href="/switch">Perform an error on server...</a>
+	{% else %}
+		<h1>Some errors occurs.</h1>
+		<p>
+			<h2>Errors listed below.</h2>
+			<ul>
+			{% for problem in problems %}
+				<li>{{ problem }}</li>
+			{% endfor %}
+			</ul>
+		</p>
+		<p><a href='/switch'>Repair</a></p>
+	{% endif %}
+	
+	{% block body %}
+	{% endblock %}
+
+</body>
+</html>
