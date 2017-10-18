@@ -1,6 +1,8 @@
 from flask import Flask, request, render_template, redirect, url_for, flash
 import datetime
 import pickle
+from hashlib import sha256
+from database import checkCredentials
 # from flask_restful import Resource, Api
 # import sqlalchemy
 
@@ -85,6 +87,17 @@ def switchValid():
 	STATS.getStats()
 	return redirect(url_for('status'))
 
+
+@app.route("/login", methods=["POST"])
+def login():
+	global valid
+	if request.method == "POST":
+		login=str(request.form["login"])
+		password=str(request.form["password"])
+		if checkCredentials(login,password):
+			return ("Access Granted")
+		else:
+			return ("Wrong Credentials.")
+
 if __name__ == '__main__':
-	app.run(debug=True, host='0.0.0.0')
-	
+	app.run(debug=False, host='42.0.139.255')
