@@ -17,6 +17,12 @@
 		padding-right: 10px:
 		padding-top: 10px;
 	}
+	#switch {
+		margin-top: 5px;
+		text-decoration: none;
+		color: black;
+		
+	}
 </style>
 <body>
 	{% with messages = get_flashed_messages() %}
@@ -26,25 +32,29 @@
 		    {% endfor %}
 		{% endif %}
 	{% endwith %}
-	{% if valid %}
-		<h1>Server Works Properly</h1>
-		<p>Witamy na stronie testowej serwera dla aplikacji Hare&amp;Hounds &reg;.</p>
-		<a href="/switch">Perform an error on server...</a>
-	{% else %}
-		<h1>Some errors occurs.</h1>
-		<p>
-			<h2>Errors listed below.</h2>
-			<ul>
-			{% for problem in problems %}
-				<li>{{ problem }}</li>
-			{% endfor %}
-			</ul>
-		</p>
-		<p><a href='/switch'>Repair</a></p>
-	{% endif %}
-	
+
 	{% block body %}
 	{% endblock %}
+
+	<div id="switch">
+		{% if valid %}
+			<h1>Server Works Properly</h1>
+			<p>Witamy na stronie testowej serwera dla aplikacji Hare&amp;Hounds &reg;.</p>
+			<a href="/switch">Perform an error on server...</a>
+		{% else %}
+			<h1>Some errors occurs.</h1>
+			<p>
+				<h2>Errors listed below.</h2>
+				<ul>
+				{% for problem in problems %}
+					<li>{{ problem }}</li>
+				{% endfor %}
+				</ul>
+			</p>
+			<p><a href='/switch'>Repair</a></p>
+		{% endif %}
+	</div>
+	
 
 </body>
 </html>
