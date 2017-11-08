@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Date, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, Date, ForeignKey, Float, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -19,27 +19,6 @@ class User(Base):
     def __repr__(self):
         return "<User(login='%s', password='%s')>" % (self.login, self.password)
 
-
-class Friend(Base):
-    __tablename__ = 'Friends'
-    user1 = Column(Integer, ForeignKey(User.id), primary_key=True)
-    user2 = Column(Integer, ForeignKey(User.id), primary_key=True)
-
-
-class Game(Base):
-    __tablename__ = 'Games'
-    id = Column(Integer, primary_key=True)
-    host = Column(Integer, ForeignKey(User.id))
-    start_data = Column(Date)
-    end_data = Column(Date)
-
-
-class Player(Base):
-    __tablename__ = "Players"
-    idUser = Column(Integer, ForeignKey(User.id), primary_key=True)
-    idGames = Column(Integer, ForeignKey(Game.id), primary_key=True)
-
-
 class Riddle(Base):
     __tablename__ = "Riddles"
     id = Column(Integer, primary_key=True)
@@ -52,19 +31,61 @@ class Riddle(Base):
     author = Column(Integer, ForeignKey(User.id))
 
 
+class Friend(Base):
+    __tablename__ = 'Friends'
+    user1 = Column(Integer, ForeignKey(User.id), primary_key=True)
+    user2 = Column(Integer, ForeignKey(User.id), primary_key=True)
+
+
+class Waypoint(Base):
+    __tablename__ = "Waypoints"
+    id = Column(Integer, primary_key=True)
+    pos_X = Column(Float)
+    pos_Y = Column(Float)
+    pos_Z = Column(Float)
+    isActive = Column(Boolean)
+    riddle = Column(Integer, ForeignKey(Riddle.id), default=0)
+
+
+class Game(Base):
+    __tablename__ = 'Games'
+    id = Column(Integer, primary_key=True)
+    host = Column(Integer, ForeignKey(User.id))
+    start_data = Column(Date)
+    end_data = Column(Date)
+    point = Column(Integer, ForeignKey(Waypoint.id))
+
+
+class Player(Base):
+    __tablename__ = "Players"
+    idUser = Column(Integer, ForeignKey(User.id), primary_key=True)
+    idGames = Column(Integer, ForeignKey(Game.id), primary_key=True)
+    isPursuiting = Column(Boolean) #true dla goniacego, false dla uciekajacego
+
+
+
+class Path(Base):
+    __tablename__ = "Paths"
+    id = Column(Integer, primary_key=True)
+    idWaypoint = Column(Integer, ForeignKey(Waypoint.id))
+
+
 class GameProperty(Base):
     __tablename__ = "GameProperties"
     start_delay = Column(Integer)
     privacy = Column(Integer)
     idGames = Column(Integer, ForeignKey(Game.id), primary_key=True)
+    startPath = Column(Integer, ForeignKey(Path.id))
 
 
 class RiddleInGame(Base):
     __tablename__ = "RiddlesInGame"
     idRiddles = Column(Integer, ForeignKey(Riddle.id), primary_key=True)
     idGames = Column(Integer, ForeignKey(Game.id), primary_key=True)
+    noRiddle = Column(Integer, autoincrement=True)
 
-# Base.metadata.create_all(engine)
+
+Base.metadata.create_all(engine)
 
 
 class dbControl:
@@ -139,7 +160,7 @@ class dbControl:
         else:
             return False
 
-    def creategame(userid, start_delay, privacy):
+    def creategame(userid, start_delay, privacy, pos_x, pos_y):
         global session
         game = Game(host=userid)
         session.add(game)
@@ -152,3 +173,15 @@ class dbControl:
         session.add(player)
         session.commit()
         return True
+
+    def getGames(posx, posy):
+        pass
+        # game list with name, distance, id
+
+    def getFriends(userid):
+        pass
+        # friend list of friends
+
+    def addFriend(userid, firendnickname):
+        pass
+        # success true/false

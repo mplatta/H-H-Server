@@ -136,13 +136,11 @@ def register():
         if result == 1:
             dbControl.registerUser(nickName, password, email)
             data = {"mailSuccess": True, "loginSuccess": True}
-            return jsonify(data)
         elif result == 0:
             data = {"mailSuccess": False, "loginSuccess": False}
-            return jsonify(data)
         elif result == -1:
             data = {"mailSuccess": False, "loginSuccess": False}
-            return jsonify(data)
+        return jsonify(data)
 
 
 @app.route("/api/resetpswd", methods=['POST'])
