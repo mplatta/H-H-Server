@@ -4,15 +4,19 @@
 	<title>HandH API server</title>
 </head>
 <style>
- 	html { border: 30px solid {% if valid %}green{% else %}red{% endif %};
+ 	/*html { border: 30px solid {% if valid %}green{% else %}red{% endif %};
 		    position: absolute;
 		    top: 0;
 		    right: 0;
 		    bottom:0;
 		    left: 0;
 		    overflow: auto;
-	}
+	}*/
 	body {
+		background-color: white;
+		width: 70%;
+		margin-left: auto;
+		margin-right: auto;
 		padding-left: 10px;
 		padding-right: 10px:
 		padding-top: 10px;
@@ -22,6 +26,12 @@
 		text-decoration: none;
 		color: black;
 		
+	}
+	.arcticle .articleContent {
+		font-size: 12px;
+	}
+	.article {
+		padding-left: 25px;
 	}
 </style>
 <body>
@@ -33,13 +43,10 @@
 		{% endif %}
 	{% endwith %}
 
-	{% block body %}
-	{% endblock %}
-
 	<div id="switch">
 		{% if valid %}
 			<h1>Server Works Properly</h1>
-			<p>Witamy na stronie testowej serwera dla aplikacji Hare&amp;Hounds &reg;.</p>
+			<p>Witamy na stronie serwera dla aplikacji Hare &amp; Hounds &reg;.</p>
 			<!-- <a href="/switch">Perform an error on server...</a> -->
 		{% else %}
 			<h1>Some errors occurs.</h1>
@@ -54,6 +61,9 @@
 			<!-- <p><a href='/switch'>Repair</a></p> -->
 		{% endif %}
 	</div>
+
+	{% block body %}
+	{% endblock %}
 	
 
 </body>

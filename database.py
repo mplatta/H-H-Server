@@ -19,6 +19,7 @@ class User(Base):
     def __repr__(self):
         return "<User(login='%s', password='%s')>" % (self.login, self.password)
 
+
 class Riddle(Base):
     __tablename__ = "Riddles"
     id = Column(Integer, primary_key=True)
@@ -60,8 +61,8 @@ class Player(Base):
     __tablename__ = "Players"
     idUser = Column(Integer, ForeignKey(User.id), primary_key=True)
     idGames = Column(Integer, ForeignKey(Game.id), primary_key=True)
-    isPursuiting = Column(Boolean) #true dla goniacego, false dla uciekajacego
-
+    # isPursuiting: true dla goniacego, false dla uciekajacego
+    isPursuiting = Column(Boolean)
 
 
 class Path(Base):
@@ -130,10 +131,13 @@ class dbControl:
 
     def addFriend(host, friend_login):
         global session
+        # get: userId jako host, nickName jako friend_login
+        # return succcess true/false
         new_relation = Friend(user1=host, user2=friend_login)
         session.add(new_relation)
         session.commit()
         return True
+        # success true/false
 
     def addRiddle(text, answer, optionA, optionB, optionC, optionD, author):
         global session
@@ -181,7 +185,3 @@ class dbControl:
     def getFriends(userid):
         pass
         # friend list of friends
-
-    def addFriend(userid, firendnickname):
-        pass
-        # success true/false

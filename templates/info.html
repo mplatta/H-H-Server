@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block body %}
+	
+	<h2>Handled waypoints:</h2>
+	{% for func in articles.keys() %}
+		<div class="article">
+			<h3>{{ articles[func].name }}</h3>
+			<!-- <a href="{{ articles[func].url }}"></a> -->
+			<p class = "articleContent">{{ articles[func].content }}</p>
+			<!-- <p class="articleContent">
+				{% for comment in articles[func].commentary %}
+					{{ comment }}
+				{% endfor %}
+			</p> -->
+		</div>
+	{% endfor %}
+
+
+{% endblock %}

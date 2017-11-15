@@ -1,7 +1,5 @@
-from flask import Flask, request, render_template, redirect, url_for, flash, jsonify
-import datetime
-import pickle
-# from hashlib import sha256
+from flask import Flask, request, render_template, jsonify, url_for
+from blog import NewsLogger
 from database import dbControl
 
 # from flask_restful import Resource, Api
@@ -13,63 +11,17 @@ app.secret_key = 'some_secret'
 
 valid = True
 
+Blog = NewsLogger()
 
-# class Stats:
-
-#     def __init__(self):
-#         self.path = 'timestamps'
-#         try:
-#             self.log = self.readTimestamps()
-#         except Exception as e:
-#             self.log = {'repair': [], 'broke': []}
-
-#     def readTimestamps(self):
-#         with open(self.path, 'rb') as f:
-#             log = pickle.load(f)
-#         return log
-
-#     def writeTimestamps(self):
-#         with open(self.path, 'wb') as f:
-#             pickle.dump(self.log, f)
-
-#     def getStats(self):
-
-#         def format(timedelta):
-#             table = str(timedelta).split(':')
-#             table = table[0].split(' ') + table[1:]
-#             string = table[0] + ' hours ' + table[1].replace(
-#                 '00', '0') + ' minutes and ' + str(int(float(table[2]))) + ' seconds'
-#             return string
-
-#         global valid
-#         if len(self.log['repair']) > 0 and len(self.log['broke']) > 0:
-#             brokenTime = self.log['repair'][-1] - self.log['broke'][-1]
-#             validTime = self.log['broke'][-1] - self.log['repair'][-1]
-#             try:
-#                 if self.log['highscore'] < validTime:
-#                     self.log['highscore'] = validTime
-#             except Exception as e:
-#                 self.log['highscore'] = validTime
-
-#             if valid:
-#                 flash('Server was down for ' + format(brokenTime))
-#             else:
-#                 flash('Server has stopped after ' +
-#                       format(validTime) + ' of continous work.')
-#             flash(format(self.log['highscore']) +
-#                   ' is actual record of server performence.')
-#         else:
-#             flash('Logs not found.')
-
-
-# STATS = Stats()
+articles = Blog.getArticles()
 
 
 @app.route("/")
 def status():
     global valid
+    global articles
     problems = ["Cannot connect to database"]
-    return render_template("base.html", valid=valid, problems=problems)
+    return render_template("info.html", valid=valid, problems=problems, articles=articles)
 
 
 @app.route("/admin", methods=["POST", "GET"])
@@ -93,24 +45,10 @@ def administrationView():
         return render_template('administration.html', valid=valid)
 
 
-# @app.route('/switch')
-# def switchValid():
-#     global valid
-#     # global STATS
-#     valid = not valid
-#     if valid:
-#         STATS.log['repair'].append(datetime.datetime.now())
-#         flash('Successfully repaired server.')
-#     else:
-#         STATS.log['broke'].append(datetime.datetime.now())
-#     STATS.writeTimestamps()
-#     # print(log)
-#     STATS.getStats()
-#     return redirect(url_for('status'))
-
-
-@app.route("/api/login", methods=["POST"])
+@Blog.register()
+@app.route(rule="/api/login", methods=["POST"])
 def login():
+    global Blog
     global valid
     if request.method == "POST":
         email = str(request.form["email"])
@@ -124,6 +62,7 @@ def login():
         return jsonify(data)
 
 
+@Blog.register()
 @app.route("/api/register", methods=["POST"])
 def register():
     global valid
@@ -143,6 +82,7 @@ def register():
         return jsonify(data)
 
 
+@Blog.register()
 @app.route("/api/resetpswd", methods=['POST'])
 def resetPassword():
     global valid
@@ -155,8 +95,9 @@ def resetPassword():
         return jsonify(data)
 
 
-@app.route("/api/creategame", methods=["POST"])
-def createGame():
+@Blog.register()
+@app.route("/api/games", methods=["POST", "GET"])
+def games():
     global valid
     if request.method == 'POST':
         userid = str(request.form["userid"])
@@ -167,6 +108,20 @@ def createGame():
         else:
             data = {"Success": False, "email": None}
         return jsonify(data)
+    elif request.method == 'GET':
+        # get games nearby form database
+        pass
+
+
+@Blog.register()
+@app.route("/api/friends", methods=["POST", "GET"])
+def friends():
+    if request.method == 'POST':
+        # add friend to database
+        pass
+    elif request.method == 'GET':
+        # get friend list from database
+        pass
 
 
 if __name__ == '__main__':
