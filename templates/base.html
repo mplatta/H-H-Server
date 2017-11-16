@@ -38,29 +38,15 @@
 	{% with messages = get_flashed_messages() %}
   		{% if messages %}
 	    	{% for message in messages %}
-		     		<p style="color:{% if valid %}green{% else %}red{% endif %}; font-weight: bold;width: 100%;text-align: center;">{{ message }}</p>
+		     		<p style="font-weight: bold;width: 100%;text-align: center;">{{ message }}</p>
 		    {% endfor %}
 		{% endif %}
 	{% endwith %}
-
-	<div id="switch">
-		{% if valid %}
-			<h1>Server Works Properly</h1>
-			<p>Witamy na stronie serwera dla aplikacji Hare &amp; Hounds &reg;.</p>
-			<!-- <a href="/switch">Perform an error on server...</a> -->
-		{% else %}
-			<h1>Some errors occurs.</h1>
-			<p>
-				<h2>Errors listed below.</h2>
-				<ul>
-				{% for problem in problems %}
-					<li>{{ problem }}</li>
-				{% endfor %}
-				</ul>
-			</p>
-			<!-- <p><a href='/switch'>Repair</a></p> -->
-		{% endif %}
-	</div>
+	
+	<header>
+		<h1>Server Works Properly</h1>
+		<p>Witamy na stronie serwera dla aplikacji Hare &amp; Hounds &reg;.</p>
+	</header>
 
 	{% block body %}
 	{% endblock %}

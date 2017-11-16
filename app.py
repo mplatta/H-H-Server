@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify, url_for
+from flask import Flask, request, render_template, jsonify
 from blog import NewsLogger
 from database import dbControl
 
@@ -9,24 +9,18 @@ app = Flask(__name__)
 app.secret_key = 'some_secret'
 # api = Api(app)
 
-valid = True
-
 Blog = NewsLogger()
-
-articles = Blog.getArticles()
 
 
 @app.route("/")
 def status():
     global valid
     global articles
-    problems = ["Cannot connect to database"]
-    return render_template("info.html", valid=valid, problems=problems, articles=articles)
+    return render_template("info.html", articles=articles)
 
 
 @app.route("/admin", methods=["POST", "GET"])
 def administrationView():
-    global valid
     if app.debug:
         if request.method == "POST":
             password = request.form['password']
@@ -45,11 +39,46 @@ def administrationView():
         return render_template('administration.html', valid=valid)
 
 
-@Blog.register()
 @app.route(rule="/api/login", methods=["POST"])
 def login():
-    global Blog
-    global valid
+    if request.method == "OPTIONS":
+        print("dupa")
+        data = {
+            "POST": {
+                "description": "Check passed credentials.",
+                "parameters": {
+                    "email": {
+                        "type": "string",
+                        "description": "Users e-mail address."
+                    },
+                    "password": {
+                        "type": "string",
+                        "description": "Users password."
+                    }
+                },
+                "example": {
+                    "email": "admin@localhost.org",
+                    "password": "5tr0ngp4ssw0rd"
+                },
+                "response": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "True if found user matching email and password. False otherwise."
+                    },
+                    "userId": {
+                        "type": "integer",
+                        "description": "Users ID from database. Null/None if failed to match."
+                    },
+                    "nickName": {
+                        "type": "string",
+                        "description": "Users nick name form database. Null/None if failed to match."
+                    }
+                }
+            }
+        }
+        print(data)
+        return jsonify(data)
+
     if request.method == "POST":
         email = str(request.form["email"])
         password = str(request.form["password"])
@@ -62,10 +91,12 @@ def login():
         return jsonify(data)
 
 
-@Blog.register()
 @app.route("/api/register", methods=["POST"])
 def register():
-    global valid
+    if request.method == "OPTIONS":
+        data = {}
+        return jsonify(data)
+
     if request.method == "POST":
         print(request.form)
         nickName = str(request.form["nickName"])
@@ -82,10 +113,12 @@ def register():
         return jsonify(data)
 
 
-@Blog.register()
 @app.route("/api/resetpswd", methods=['POST'])
 def resetPassword():
-    global valid
+    if request.method == "OPTIONS":
+        data = {}
+        return jsonify(data)
+
     if request.method == 'POST':
         email = str(request.form["email"])
         if dbControl.resetPassword(email):
@@ -95,10 +128,12 @@ def resetPassword():
         return jsonify(data)
 
 
-@Blog.register()
 @app.route("/api/games", methods=["POST", "GET"])
 def games():
-    global valid
+    if request.method == "OPTIONS":
+        data = {}
+        return jsonify(data)
+
     if request.method == 'POST':
         userid = str(request.form["userid"])
         start_delay = int(request.form["start_delay"])
@@ -109,19 +144,29 @@ def games():
             data = {"Success": False, "email": None}
         return jsonify(data)
     elif request.method == 'GET':
-        # get games nearby form database
-        pass
+        # seekerLat = double(request.form["seekerLat"])
+        # seekerLon = double(request.form["seekerLon"])
+        # radius = double(request.form["radius"])
+        data = {}
+        return jsonify(data)
 
 
-@Blog.register()
 @app.route("/api/friends", methods=["POST", "GET"])
 def friends():
+    if request.method == "OPTIONS":
+        data = {}
+        return jsonify(data)
+
     if request.method == 'POST':
         # add friend to database
         pass
     elif request.method == 'GET':
         # get friend list from database
         pass
+
+
+Blog.register(app)
+articles = Blog.getArticles()
 
 
 if __name__ == '__main__':

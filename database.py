@@ -17,7 +17,7 @@ class User(Base):
     email = Column(String, unique=True)
 
     def __repr__(self):
-        return "<User(login='%s', password='%s')>" % (self.login, self.password)
+        return "<User(login='%s', id='%s', password='%s')>" % (self.login, self.id, self.password)
 
 
 class Riddle(Base):
@@ -36,6 +36,9 @@ class Friend(Base):
     __tablename__ = 'Friends'
     user1 = Column(Integer, ForeignKey(User.id), primary_key=True)
     user2 = Column(Integer, ForeignKey(User.id), primary_key=True)
+
+    def __repr__(self):
+        return "<Friendship between '%s' and '%s')>" % (self.user1, self.user2)
 
 
 class Waypoint(Base):
@@ -178,10 +181,24 @@ class dbControl:
         session.commit()
         return True
 
-    def getGames(posx, posy):
-        pass
+    def getGames():
+        global session
+        query = session.query(Game, Waypoint, GameProperty).filter(
+            Game.point == Waypoint.id).filter(GameProperty.idGames == Game.id).all()
+        print(query)
         # game list with name, distance, id
 
+    # Checked, working
     def getFriends(userid):
-        pass
+        global session
+        query = session.query(Friend).filter(
+            (Friend.user1 == userid) | (Friend.user2 == userid)).all()
+        friends = [{"id": line.user1} if not line.user1 == userid else {"id": line.user2} for line in query]
+        for friend in friends:
+            query_username = session.query(User.login).filter(User.id == friend["id"])
+            friend["login"] = query_username.first()[0]
+        return friends
         # friend list of friends
+
+
+# dbControl.getGames()
