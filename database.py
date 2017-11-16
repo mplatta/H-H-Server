@@ -1,5 +1,6 @@
-from sqlalchemy import create_engine, Column, Integer, String, Date, ForeignKey, Float, Boolean
+from sqlalchemy import create_engine, Column, Integer, String, Date, ForeignKey, Float, Boolean, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
 engine = create_engine('sqlite:///appDB.db', echo=False)
@@ -36,6 +37,7 @@ class Friend(Base):
     __tablename__ = 'Friends'
     user1 = Column(Integer, ForeignKey(User.id), primary_key=True)
     user2 = Column(Integer, ForeignKey(User.id), primary_key=True)
+    UniqueConstraint(user2, user1, name="uniUsers")
 
     def __repr__(self):
         return "<Friendship between '%s' and '%s')>" % (self.user1, self.user2)
@@ -134,13 +136,29 @@ class dbControl:
 
     def addFriend(host, friend_login):
         global session
-        # get: userId jako host, nickName jako friend_login
-        # return succcess true/false
-        new_relation = Friend(user1=host, user2=friend_login)
-        session.add(new_relation)
-        session.commit()
-        return True
-        # success true/false
+
+        # willDuplicate check if relation already exist but other way round
+        # returns True if relation exist and shouldn't be made
+        # and False if not and cane be made
+        def willDuplicate():
+            query = session.query(Friend).filter(Friend.user1 == friend_login).filter(Friend.user2 == host)
+            result = query.first()
+            print(result)
+            if result:
+                return True
+            else:
+                return False
+
+        if not willDuplicate():
+            new_relation = Friend(user1=host, user2=friend_login)
+            session.add(new_relation)
+            try:
+                session.commit()
+            except IntegrityError:
+                return False
+            return True
+        else:
+            return False
 
     def addRiddle(text, answer, optionA, optionB, optionC, optionD, author):
         global session
@@ -202,3 +220,4 @@ class dbControl:
 
 
 # dbControl.getGames()
+# dbControl.addFriend(1000, 1001)

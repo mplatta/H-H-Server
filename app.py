@@ -158,8 +158,13 @@ def friends():
         return jsonify(data)
 
     if request.method == 'POST':
-        # add friend to database
-        pass
+        host = request.form["userId"]
+        friend = request.form["nickName"]
+        if dbControl.addFriend(host, friend):
+            data = {"success": True}
+        else:
+            data = {"success": False}
+        return jsonify(data)
     elif request.method == 'GET':
         userid = int(request.args.get("userId"))
         friendsList = dbControl.getFriends(userid)
