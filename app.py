@@ -161,8 +161,14 @@ def friends():
         # add friend to database
         pass
     elif request.method == 'GET':
-        # get friend list from database
-        pass
+        userid = int(request.args.get("userId"))
+        friendsList = dbControl.getFriends(userid)
+        data = {
+            "message": "List of users friends.",
+            "count": len(friendsList),
+            "friendsList": friendsList
+        }
+        return jsonify(data)
 
 
 Blog.register(app)
