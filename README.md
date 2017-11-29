@@ -5,7 +5,7 @@ flask serwer web aplikacji mobilnej Hare & Hounds
 
 
 - /api/login
-
+'''
 "POST": {
                 "description": "Check passed credentials.",
                 "parameters": {
@@ -37,10 +37,10 @@ flask serwer web aplikacji mobilnej Hare & Hounds
                     }
                 }
             }
-
+'''
 
 - /api/register
-
+'''
 "POST": {
                 "description": "Register new user.",
                 "parameters": {
@@ -72,6 +72,7 @@ flask serwer web aplikacji mobilnej Hare & Hounds
                     }
                 }
             }
+'''
 
 - /api/resetpswd
 
