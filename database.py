@@ -60,6 +60,7 @@ class Game(Base):
     start_data = Column(Date)
     end_data = Column(Date)
     point = Column(Integer, ForeignKey(Waypoint.id))
+    isActive = Column(Boolean)
 
 
 class Player(Base):
@@ -68,6 +69,7 @@ class Player(Base):
     idGames = Column(Integer, ForeignKey(Game.id), primary_key=True)
     # isPursuiting: true dla goniacego, false dla uciekajacego
     isPursuiting = Column(Boolean)
+    isReady = Column(Boolean)
 
 
 class Path(Base):
@@ -137,20 +139,34 @@ class dbControl:
     def addFriend(host, friend_login):
         global session
 
+        def getId(friend_login):
+            query = session.query(User).filter(User.login == friend_login)
+            friend = query.first()
+            print(friend)
+            if friend is not None:
+                return friend.id
+            else:
+                return False
+
         # willDuplicate check if relation already exist but other way round
         # returns True if relation exist and shouldn't be made
         # and False if not and cane be made
         def willDuplicate():
-            query = session.query(Friend).filter(Friend.user1 == friend_login).filter(Friend.user2 == host)
+            query = session.query(Friend).filter(Friend.user1 == friend_id).filter(Friend.user2 == host)
             result = query.first()
-            print(result)
             if result:
                 return True
             else:
                 return False
 
+        friend_id = getId(friend_login)
+        if not friend_id:
+            return False
+        elif int(friend_id) == int(host):
+            return False
+
         if not willDuplicate():
-            new_relation = Friend(user1=host, user2=friend_login)
+            new_relation = Friend(user1=host, user2=friend_id)
             session.add(new_relation)
             try:
                 session.commit()
@@ -194,16 +210,17 @@ class dbControl:
             start_delay=start_delay, privacy=privacy, idGames=game.id)
         session.add(game_property)
         session.flush()
-        player = Player(idUser=userid, idGames=game.id)
+        player = Player(idUser=userid, idGames=game.id, isPursuiting=False, isReady=True)
         session.add(player)
         session.commit()
-        return True
+        return game.id
 
     def getGames():
         global session
         query = session.query(Game, Waypoint, GameProperty).filter(
             Game.point == Waypoint.id).filter(GameProperty.idGames == Game.id).all()
         print(query)
+
         # game list with name, distance, id
 
     # Checked, working
@@ -218,6 +235,47 @@ class dbControl:
         return friends
         # friend list of friends
 
+    def joinGame(userId, gamesId):
+        global session
+        player = Player(idUser=userId, idGames=gamesId, isPursuiting=1, isReady=0)
+        session.add(player)
+        session.commit()
+        return True
+
+    def isPlayer(playerId):
+        global session
+        query = session.query(Player).filter(Player.idUser == playerId).all()
+        print(query)
+
+    def leaveGame(user, game):
+        global session
+        player = session.query(Player).filter(Player.idUser == user).filter(Player.idGames == game).one()
+        session.delete(player)
+        session.commit()
+        return True
+
+    def getPlayers(gameId):
+        global session
+        players = session.query(Player).filter(Player.idGames == gameId).all()
+        return players
+
+    def setReady(user, game):
+        global session
+        player = session.query(Player).filter(Player.idUser == user).filter(Player.idGames == game).one()
+        player.isReady = True
+        session.commit()
+        return True
+
+    def setNotReady(user, game):
+        global session
+        player = session.query(Player).filter(Player.idUser == user).filter(Player.idGames == game).one()
+        player.isReady = False
+        session.commit()
+        return True
+
 
 # dbControl.getGames()
-# dbControl.addFriend(1000, 1001)
+# dbControl.addFriend(1000, "mplatta")
+# print(dbControl.creategame(userid=1000, start_delay=2, privacy=0, pos_x=0, pos_y=0))
+# dbControl.isPlayer(1000)
+# print(dbControl.setReady(1002, 6))

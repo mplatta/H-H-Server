@@ -41,50 +41,13 @@ def administrationView():
 
 @app.route(rule="/api/login", methods=["POST"])
 def login():
-    if request.method == "OPTIONS":
-        print("dupa")
-        data = {
-            "POST": {
-                "description": "Check passed credentials.",
-                "parameters": {
-                    "email": {
-                        "type": "string",
-                        "description": "Users e-mail address."
-                    },
-                    "password": {
-                        "type": "string",
-                        "description": "Users password."
-                    }
-                },
-                "example": {
-                    "email": "admin@localhost.org",
-                    "password": "5tr0ngp4ssw0rd"
-                },
-                "response": {
-                    "success": {
-                        "type": "boolean",
-                        "description": "True if found user matching email and password. False otherwise."
-                    },
-                    "userId": {
-                        "type": "integer",
-                        "description": "Users ID from database. Null/None if failed to match."
-                    },
-                    "nickName": {
-                        "type": "string",
-                        "description": "Users nick name form database. Null/None if failed to match."
-                    }
-                }
-            }
-        }
-        print(data)
-        return jsonify(data)
-
     if request.method == "POST":
         email = str(request.form["email"])
         password = str(request.form["password"])
         user = dbControl.login(email, password)
         if user:
             data = {"success": True, "userId": user.id, "nickName": user.login}
+            print(data)
         else:
             data = {"success": False, "userId": None, "nickName": None}
 
@@ -135,28 +98,105 @@ def games():
         return jsonify(data)
 
     if request.method == 'POST':
-        userid = str(request.form["userid"])
+        userid = str(request.form["userId"])
         start_delay = int(request.form["start_delay"])
         privacy = int(request.form["privacy"])
-        if dbControl.creategame(userid, start_delay, privacy):
-            data = {"Success": True, "userid": userid}
+        gameId = dbControl.creategame(userid, start_delay, privacy, 0.0, 0.0)
+        if gameId is not False:
+            data = {"Success": True, "gameId": gameId}
         else:
             data = {"Success": False, "email": None}
         return jsonify(data)
     elif request.method == 'GET':
-        # seekerLat = double(request.form["seekerLat"])
-        # seekerLon = double(request.form["seekerLon"])
-        # radius = double(request.form["radius"])
+
+        # seekerLat = float(request.form["seekerLat"])
+        # seekerLon = float(request.form["seekerLon"])
+        # radius = float(request.form["radius"])
         data = {}
+        return jsonify(data)
+
+
+@app.route("/api/games/leave", methods=["GET"])
+def leave():
+    if request.method == "GET":
+        player = request.args.get("userId")
+        game = request.args.get("gameId")
+        r = dbControl.leaveGame(player, game)
+        if r:
+            data = {
+                "success": True,
+            }
+        else:
+            data = {
+                "success": False,
+            }
+        return jsonify(data)
+
+
+@app.route("/api/games/lobby", methods=["GET"])
+def checkLobby():
+    if request.method == "GET":
+        gameId = request.args.get("gameId")
+        players = dbControl.getPlayers(gameId)
+        if len(players) > 1:
+            ready = True
+        else:
+            ready = False
+        data = {
+            "players": []
+        }
+
+        for player in players:
+            ready *= player.isReady
+            json = {
+                "userId": player.idUser,
+                "gameId": player.idGames,
+                "isPursuiting": player.isPursuiting,
+                "isReady": player.isReady,
+            }
+            data["players"].append(json)
+        data["ready"] = ready
+        return jsonify(data)
+
+
+@app.route("/api/games/getready", methods=["POST"])
+def getReady():
+    if request.method == "POST":
+        user = int(request.form["userId"])
+        game = int(request.form["gameId"])
+        r = dbControl.setReady(user, game)
+        data = {
+            "success": r
+        }
+        return jsonify(data)
+
+
+@app.route("/api/games/notready", methods=["POST"])
+def getNotReady():
+    if request.method == "POST":
+        user = int(request.form["userId"])
+        game = int(request.form["gameId"])
+        r = dbControl.setNotReady(user, game)
+        data = {
+            "success": r
+        }
+        return jsonify(data)
+
+
+@app.route("/api/games/join", methods=["POST"])
+def joinGame():
+    if request.method == "POST":
+        userId = int(request.form["userId"])
+        gameId = int(request.form["gameId"])
+        r = dbControl.joinGame(userId, gameId)
+        data = {
+            "success": r,
+        }
         return jsonify(data)
 
 
 @app.route("/api/friends", methods=["POST", "GET"])
 def friends():
-    if request.method == "OPTIONS":
-        data = {}
-        return jsonify(data)
-
     if request.method == 'POST':
         host = request.form["userId"]
         friend = request.form["nickName"]
@@ -164,7 +204,6 @@ def friends():
             data = {"success": True}
         else:
             data = {"success": False}
-        return jsonify(data)
     elif request.method == 'GET':
         userid = int(request.args.get("userId"))
         friendsList = dbControl.getFriends(userid)
@@ -173,7 +212,7 @@ def friends():
             "count": len(friendsList),
             "friendsList": friendsList
         }
-        return jsonify(data)
+    return jsonify(friendsList)
 
 
 Blog.register(app)
@@ -181,5 +220,5 @@ articles = Blog.getArticles()
 
 
 if __name__ == '__main__':
-    # app.run(debug=False, host='42.0.139.255')
-    app.run(debug=True, host='localhost')
+    app.run(debug=False, host='42.0.139.255')
+    # app.run(debug=True, host='localhost')
