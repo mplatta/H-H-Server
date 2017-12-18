@@ -7,16 +7,15 @@ from database import dbControl
 
 app = Flask(__name__)
 app.secret_key = 'some_secret'
-# api = Api(app)
-
-Blog = NewsLogger()
 
 
 @app.route("/")
 def status():
     global valid
-    global articles
-    return render_template("info.html", articles=articles)
+    YOUR_API_KEY = ' AIzaSyCk_JkSZuO6xgIckOxi9CXL2l3dO3T0-MY '
+    latitude = 18.6185821
+    longitude = 54.371757
+    return render_template("base.html", key=YOUR_API_KEY, latitude=latitude, longitude=longitude)
 
 
 @app.route("/admin", methods=["POST", "GET"])
@@ -108,12 +107,38 @@ def games():
             data = {"Success": False, "email": None}
         return jsonify(data)
     elif request.method == 'GET':
-
+        games = dbControl.getGames()
+        data = {
+            "games": []
+        }
+        for game in games:
+            if not game.isActive:
+                json = {
+                    "id": game.id,
+                    "host": game.host,
+                    "start_date": game.start_date,
+                    "privacy": game.privacy,
+                }
+            data["games"].append(json)
         # seekerLat = float(request.form["seekerLat"])
         # seekerLon = float(request.form["seekerLon"])
         # radius = float(request.form["radius"])
-        data = {}
         return jsonify(data)
+
+
+@app.route("/api/games/one", methods=["POST"])
+def getOneGame():
+    if request.method == "POST":
+        gameId = request.forms["gameId"]
+        game = dbControl.getOneGame(gameId)
+        data = {
+            "id": game.id,
+            "host": game.host,
+            "start_date": game.start_date,
+            "isActive": game.isActive,
+        }
+        return jsonify(data)
+    return jsonify({"succsess": False})
 
 
 @app.route("/api/games/leave", methods=["GET"])
@@ -133,12 +158,12 @@ def leave():
         return jsonify(data)
 
 
-@app.route("/api/games/lobby", methods=["GET"])
+@app.route("/api/games/lobby", methods=["POST"])
 def checkLobby():
-    if request.method == "GET":
-        gameId = request.args.get("gameId")
+    if request.method == "POST":
+        gameId = str(request.form["gameId"])
         players = dbControl.getPlayers(gameId)
-        if len(players) > 1:
+        if len(players) > 0:
             ready = True
         else:
             ready = False
@@ -153,14 +178,15 @@ def checkLobby():
                 "gameId": player.idGames,
                 "isPursuiting": player.isPursuiting,
                 "isReady": player.isReady,
+                "login": dbControl.getLoginByID(player.idUser)
             }
             data["players"].append(json)
-        data["ready"] = ready
+        data["ready"] = bool(ready)
         return jsonify(data)
 
 
-@app.route("/api/games/getready", methods=["POST"])
-def getReady():
+@app.route("/api/games/setready", methods=["POST"])
+def setReady():
     if request.method == "POST":
         user = int(request.form["userId"])
         game = int(request.form["gameId"])
@@ -198,12 +224,14 @@ def joinGame():
 @app.route("/api/friends", methods=["POST", "GET"])
 def friends():
     if request.method == 'POST':
-        host = request.form["userId"]
+        host = int(request.form["userId"])
         friend = request.form["nickName"]
         if dbControl.addFriend(host, friend):
             data = {"success": True}
         else:
             data = {"success": False}
+        return jsonify(data)
+
     elif request.method == 'GET':
         userid = int(request.args.get("userId"))
         friendsList = dbControl.getFriends(userid)
@@ -212,12 +240,54 @@ def friends():
             "count": len(friendsList),
             "friendsList": friendsList
         }
-    return jsonify(friendsList)
+        return jsonify(friendsList)
 
 
-Blog.register(app)
-articles = Blog.getArticles()
+@app.route("/api/setWaypoint", methods=["POST"])
+def Waypoint():
+    if request.method == 'POST':
+        gameId = int(request.form["gameId"])
+        pos_x = float(request.form["pos_x"])
+        pos_y = float(request.form["pos_y"])
+        if str(request.form["riddle"]) == "True":
+            riddle = dbControl.getRiddle()
+            dbControl.pushWayPoint(gameId, pos_x, pos_y, riddle.id)
+        else:
+            riddle = None
+            dbControl.pushWayPoint(gameId, pos_x, pos_y, None)
+        data = {
+            "success": True,
+        }
+        return jsonify(data)
 
+
+@app.route("/api/games/checkpoint", methods=["POST"])
+def checkpoint():
+    if request.method == 'POST':
+        gameId = int(request.form["gameId"])
+        r = dbControl.checkpoint(gameId)
+        if r:
+            isRiddle = True
+            riddle = dbControl.getRiddle()
+            pos_x = r.
+        else:
+            isRiddle = False
+            waypoint = dbControl.getLastWaypoint()
+
+        data = {
+            "pos_x": pos_x,
+            "pos_y": pos_y,
+            "flag": isRiddle,
+            "riddle": {
+                "text": riddle.text,
+                "answer": riddle.answer,
+                "optionA": riddle.optionA,
+                "optionB": riddle.optionB,
+                "optionC": riddle.optionC,
+                "optionD": riddle.optionD,
+            }
+        }
+        return jsonify(data)
 
 if __name__ == '__main__':
     app.run(debug=False, host='42.0.139.255')

@@ -18,7 +18,7 @@ class User(Base):
     email = Column(String, unique=True)
 
     def __repr__(self):
-        return "<User(login='%s', id='%s', password='%s')>" % (self.login, self.id, self.password)
+        return "<User(login='%s', id='%s')>" % (self.login, self.id)
 
 
 class Riddle(Base):
@@ -50,7 +50,6 @@ class Waypoint(Base):
     pos_Y = Column(Float)
     pos_Z = Column(Float)
     isActive = Column(Boolean)
-    riddle = Column(Integer, ForeignKey(Riddle.id), default=0)
 
 
 class Game(Base):
@@ -65,7 +64,7 @@ class Game(Base):
 
 class Player(Base):
     __tablename__ = "Players"
-    idUser = Column(Integer, ForeignKey(User.id), primary_key=True)
+    idUser = Column(Integer, ForeignKey(User.id), primary_key=True, unique=True)
     idGames = Column(Integer, ForeignKey(Game.id), primary_key=True)
     # isPursuiting: true dla goniacego, false dla uciekajacego
     isPursuiting = Column(Boolean)
@@ -91,6 +90,7 @@ class RiddleInGame(Base):
     idRiddles = Column(Integer, ForeignKey(Riddle.id), primary_key=True)
     idGames = Column(Integer, ForeignKey(Game.id), primary_key=True)
     noRiddle = Column(Integer, autoincrement=True)
+    idWaypoint = Column(Integer, ForeignKey(Waypoint.id), default=0)
 
 
 Base.metadata.create_all(engine)
@@ -203,25 +203,42 @@ class dbControl:
 
     def creategame(userid, start_delay, privacy, pos_x, pos_y):
         global session
-        game = Game(host=userid)
+
+        def isHost():
+            r = session.query(Game).filter_by(host=userid).first()
+            if r:
+                return r
+            else:
+                return False
+
+        r = isHost()
+        if r:
+            return r.id
+
+        game = Game(host=userid, isActive=False)
         session.add(game)
         session.flush()
         game_property = GameProperty(
             start_delay=start_delay, privacy=privacy, idGames=game.id)
         session.add(game_property)
         session.flush()
-        player = Player(idUser=userid, idGames=game.id, isPursuiting=False, isReady=True)
-        session.add(player)
-        session.commit()
-        return game.id
+        try:
+            player = Player(idUser=userid, idGames=game.id, isPursuiting=False, isReady=False)
+            session.add(player)
+            session.commit()
+            return game.id
+        except Exception:
+            return -1
 
     def getGames():
         global session
-        query = session.query(Game, Waypoint, GameProperty).filter(
-            Game.point == Waypoint.id).filter(GameProperty.idGames == Game.id).all()
-        print(query)
+        query = session.query(Game).filter(Game.isActive is False).all()
+        return query
 
-        # game list with name, distance, id
+    def getOneGame(gameId):
+        global session
+        game = session.query(Game).filter_by(id=gameId).one()
+        return game
 
     # Checked, working
     def getFriends(userid):
@@ -231,21 +248,29 @@ class dbControl:
         friends = [{"id": line.user1} if not line.user1 == userid else {"id": line.user2} for line in query]
         for friend in friends:
             query_username = session.query(User.login).filter(User.id == friend["id"])
+            query_ishost = session.query(Game).filter(Game.isActive == 0).filter(Game.host == friend["id"]).first()
             friend["login"] = query_username.first()[0]
+            friend["gameId"] = query_ishost.id if query_ishost is not None else 0
         return friends
         # friend list of friends
 
-    def joinGame(userId, gamesId):
-        global session
-        player = Player(idUser=userId, idGames=gamesId, isPursuiting=1, isReady=0)
-        session.add(player)
-        session.commit()
-        return True
-
     def isPlayer(playerId):
         global session
-        query = session.query(Player).filter(Player.idUser == playerId).all()
-        print(query)
+        query = session.query(Player).filter_by(idUser=playerId).first()
+        if query:
+            return True
+        else:
+            return False
+
+    def joinGame(userId, gamesId):
+        global session
+        if dbControl.isPlayer(userId) is False:
+            player = Player(idUser=userId, idGames=gamesId, isPursuiting=1, isReady=0)
+            session.add(player)
+            session.commit()
+            return True
+        else:
+            return False
 
     def leaveGame(user, game):
         global session
@@ -258,6 +283,11 @@ class dbControl:
         global session
         players = session.query(Player).filter(Player.idGames == gameId).all()
         return players
+
+    def getLoginByID(userId):
+        global session
+        login = session.query(User).filter_by(id=userId).one().login
+        return login
 
     def setReady(user, game):
         global session
@@ -273,9 +303,49 @@ class dbControl:
         session.commit()
         return True
 
+    def getRiddle():
+        global session
+        riddles = session.query(Riddle).count()
+        from random import randint
+        riddleId = randint(1, riddles)
+        riddle = session.query(Riddle).filter_by(id=riddleId).one()
+        return riddle
 
-# dbControl.getGames()
-# dbControl.addFriend(1000, "mplatta")
+    def pushWayPoint(gameId, pos_x, pos_y, riddleId):
+        global session
+
+        waypoint = Waypoint(pos_X=pos_x, pos_Y=pos_y, pos_Z=0.0, isActive=False)
+        session.add(waypoint)
+        session.flush()
+        if riddleId is not None:
+            record = RiddleInGame(idGames=gameId, idRiddles=riddleId, idWaypoint=waypoint.id)
+            session.add(record)
+            session.flush()
+        try:
+            game = session.query(Game).filter_by(id=gameId).one()
+            game.point = waypoint.id
+            session.commit()
+        except Exception:
+            return False
+
+    def resetGames():
+        global session
+        session.query(GameProperty).delete()
+        session.query(Player).delete()
+        session.query(Game).delete()
+        session.query(Waypoint).delete()
+        session.commit()
+
+
+# print(dbControl.getGames())
+# dbControl.addFriend(1001, "awejler")
 # print(dbControl.creategame(userid=1000, start_delay=2, privacy=0, pos_x=0, pos_y=0))
 # dbControl.isPlayer(1000)
 # print(dbControl.setReady(1002, 6))
+# print(dbControl.getFriends(1001))
+# print(dbControl.getLoginByID(1000))
+# print(dbControl.getPlayers(1))
+# print(dbControl.joinGame(1002, 1))
+# print(dbControl.getRiddle())
+# dbControl.resetGames()
+dbControl.pushWayPoint(1, 2.0, 3.44, 1)
