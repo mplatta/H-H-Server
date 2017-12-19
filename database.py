@@ -87,10 +87,10 @@ class GameProperty(Base):
 
 class RiddleInGame(Base):
     __tablename__ = "RiddlesInGame"
-    idRiddles = Column(Integer, ForeignKey(Riddle.id), primary_key=True)
-    idGames = Column(Integer, ForeignKey(Game.id), primary_key=True)
-    noRiddle = Column(Integer, autoincrement=True)
-    idWaypoint = Column(Integer, ForeignKey(Waypoint.id), default=0)
+    id = Column(Integer, primary_key=True, unique=True, autoincrement=True)
+    idRiddles = Column(Integer, ForeignKey(Riddle.id))
+    idGames = Column(Integer, ForeignKey(Game.id))
+    idWaypoint = Column(Integer, ForeignKey(Waypoint.id))
 
 
 Base.metadata.create_all(engine)
@@ -303,14 +303,6 @@ class dbControl:
         session.commit()
         return True
 
-    def getRiddle():
-        global session
-        riddles = session.query(Riddle).count()
-        from random import randint
-        riddleId = randint(1, riddles)
-        riddle = session.query(Riddle).filter_by(id=riddleId).one()
-        return riddle
-
     def pushWayPoint(gameId, pos_x, pos_y, riddleId):
         global session
 
@@ -328,12 +320,49 @@ class dbControl:
         except Exception:
             return False
 
+    def checkpoint(gameId):
+        global session
+        r = session.query(RiddleInGame).filter(RiddleInGame.idGames == gameId).first()
+        return r
+
+    def getRiddle(riddleId=None):
+        global session
+        if riddleId is not None:
+            r = session.query(Riddle).filter_by(id=riddleId).one()
+            return r
+        else:
+            riddles = session.query(Riddle).count()
+            from random import randint
+            riddleId = randint(1, riddles)
+            riddle = session.query(Riddle).filter_by(id=riddleId).one()
+            return riddle
+
+    def getCoords(idWaypoint):
+        global session
+        try:
+            r = session.query(Waypoint).filter_by(id=idWaypoint).one()
+            return (r.pos_X, r.pos_Y)
+        except Exception:
+            return (3.14, 6.28)
+
+    def getLastWaypoint(gameId):
+        global session
+        r = session.query(Game).filter_by(id=gameId).one()
+        return dbControl.getCoords(r.point)
+
+    def ridRiddle(idRiddle):
+        global session
+        r = session.query(RiddleInGame).filter_by(id=idRiddle).delete()
+        session.commit()
+        return True
+
     def resetGames():
         global session
         session.query(GameProperty).delete()
         session.query(Player).delete()
         session.query(Game).delete()
         session.query(Waypoint).delete()
+        session.query(RiddleInGame).delete()
         session.commit()
 
 
@@ -347,5 +376,8 @@ class dbControl:
 # print(dbControl.getPlayers(1))
 # print(dbControl.joinGame(1002, 1))
 # print(dbControl.getRiddle())
-# dbControl.resetGames()
-dbControl.pushWayPoint(1, 2.0, 3.44, 1)
+dbControl.resetGames()
+# dbControl.pushWayPoint(1, 2.0, 3.44, 1)
+# print(dbControl.getLastWaypoint(1))
+# dbControl.pushWayPoint(2, 3.14, 6.123, None)
+# dbControl.ridRiddle

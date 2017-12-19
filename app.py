@@ -268,17 +268,19 @@ def checkpoint():
         r = dbControl.checkpoint(gameId)
         if r:
             isRiddle = True
-            riddle = dbControl.getRiddle()
-            pos_x = r.
+            riddle = dbControl.getRiddle(r.idRiddles)
+            pos_x, pos_y = dbControl.getCoords(r.idWaypoint)
         else:
             isRiddle = False
-            waypoint = dbControl.getLastWaypoint()
+            pos_x, pos_y = dbControl.getLastWaypoint(gameId)
 
         data = {
             "pos_x": pos_x,
             "pos_y": pos_y,
             "flag": isRiddle,
-            "riddle": {
+        }
+        if isRiddle:
+            data["riddle"] = {
                 "text": riddle.text,
                 "answer": riddle.answer,
                 "optionA": riddle.optionA,
@@ -286,8 +288,15 @@ def checkpoint():
                 "optionC": riddle.optionC,
                 "optionD": riddle.optionD,
             }
-        }
         return jsonify(data)
+
+
+@app.route("/api/games/updateQueue", methods=["POST"])
+def ridRiddle():
+    if request.method == 'POST':
+        idRiddle = int(request.form["idRiddle"])
+        r = dbControl.ridRiddle(idRiddle)
+
 
 if __name__ == '__main__':
     app.run(debug=False, host='42.0.139.255')
